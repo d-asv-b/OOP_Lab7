@@ -3,11 +3,9 @@
 #include "AppLogic.hpp"
 
 #include <iostream>
-#include <mutex>
 
 class UserInteractionHandler {
 private:
-    std::mutex printMutex_;
 public:
     UserInteractionHandler() = default;
 

@@ -3,14 +3,14 @@
 #include <cstddef>
 #include <istream>
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "Interfaces.hpp"
-#include "../observers/Observer.hpp"
+#include "../observers/IObservers.hpp"
 
 enum struct NPC_Type {
     Dragon,
@@ -49,8 +49,10 @@ protected:
 
     NPC_Type type_;
 
-    std::vector<std::shared_ptr<IFightObserver>> observers_;
-    std::mutex mutex_;
+    std::vector<std::shared_ptr<IFightObserver>> fight_observers_;
+    std::vector<std::shared_ptr<IDiceObserver>> dice_observers_;
+
+    mutable std::shared_mutex mutex_;
 
     std::pair<char, char> get_attack_defense();
 
@@ -70,7 +72,9 @@ public:
     virtual bool is_close(std::shared_ptr<NPC> other) const;
 
     virtual void subscribe(const std::shared_ptr<IFightObserver> observer);
+    virtual void subscribe(const std::shared_ptr<IDiceObserver> observer);
     virtual void notify(const std::shared_ptr<NPC> other, FightOutcome outcome);
+    virtual void notify(const std::string& dice_value_name, char dice_value);
 
     virtual std::pair<long, long> get_position() const;
     virtual void move(long shift_X, long shift_Y);

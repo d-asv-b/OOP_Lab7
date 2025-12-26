@@ -40,10 +40,10 @@ FightOutcome Dragon::accept(std::shared_ptr<NPC> attacker) {
 
 FightOutcome Dragon::fight(std::shared_ptr<WanderingKnight> other) {
     int this_defense   = tossD6();
-    int this_strength  = tossD6();
+    this->notify("'защита'", this_defense);
 
-    int defender_defense   = tossD6();
     int defender_strength  = tossD6();
+    this->notify("'сила'", defender_strength);
 
     if (this_defense < defender_strength) {
         this->kill();
@@ -54,11 +54,11 @@ FightOutcome Dragon::fight(std::shared_ptr<WanderingKnight> other) {
 }
 
 FightOutcome Dragon::fight(std::shared_ptr<Princess> other) {
-    int this_defense   = tossD6();
     int this_strength  = tossD6();
+    this->notify("'сила'", this_strength);
 
     int defender_defense   = tossD6();
-    int defender_strength  = tossD6();
+    this->notify("'защита'", defender_defense);
 
     if (this_strength > defender_defense) {
         other->kill();

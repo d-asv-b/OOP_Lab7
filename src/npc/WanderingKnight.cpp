@@ -46,11 +46,11 @@ FightOutcome WanderingKnight::fight(std::shared_ptr<Princess> other) {
 }
 
 FightOutcome WanderingKnight::fight(std::shared_ptr<Dragon> other) {
-    int this_defense   = tossD6();
     int this_strength  = tossD6();
+    this->notify("'сила'", this_strength);
 
     int defender_defense   = tossD6();
-    int defender_strength  = tossD6();
+    this->notify("'защита'", defender_defense);
 
     if (this_strength > defender_defense) {
         other->kill();

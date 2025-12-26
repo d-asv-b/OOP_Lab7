@@ -7,12 +7,14 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <utility>
+#include <coroutine>
 
 #define WITH_COROUTINES
 
@@ -144,6 +146,83 @@ void saveToFileLogic(const std::vector<std::shared_ptr<NPC>> characters, const s
     }
 }
 
+#ifdef WITH_COROUTINES
+
+class FightCoroutine {
+public: 
+    struct promise_type {
+        FightCoroutine get_return_object() {
+            return FightCoroutine{std::coroutine_handle<promise_type>::from_promise(*this)};
+        }
+
+        std::suspend_always initial_suspend() noexcept { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+
+        void return_void() { return; }
+        void unhandled_exception() { std::terminate(); }
+    };
+
+    explicit FightCoroutine(std::coroutine_handle<promise_type> handle) : handle_(handle) {}
+
+    FightCoroutine(const FightCoroutine& other) = delete;
+    FightCoroutine& operator=(const FightCoroutine& other) = delete;
+
+    FightCoroutine(FightCoroutine&& other) noexcept : handle_(other.handle_) {
+        other.handle_ = nullptr;
+    }
+    FightCoroutine& operator=(FightCoroutine&& other) noexcept {
+        this->handle_ = other.handle_;
+        other.handle_ = nullptr;
+
+        return *this;
+    }
+
+    ~FightCoroutine() {
+        if (this->handle_) {
+            this->handle_.destroy();
+        }
+    }
+
+    void resume() {
+        if (this->handle_ && !this->handle_.done()) {
+            this->handle_.resume();
+        }
+    }
+
+private:
+    std::coroutine_handle<promise_type> handle_;
+};
+
+FightCoroutine perform_fight() {
+    while (true) {
+        if (FightManager::get().has_events()) {
+            FightEvent event = FightManager::get().get_event();
+
+            if (
+                !event.attacker->is_dead() && !event.defender->is_dead() &&
+                event.attacker->is_close(event.defender)
+            ) {
+                FightOutcome result = event.defender->accept(event.attacker);
+                event.attacker->notify(event.defender, result);
+
+                if (result == FightOutcome::Victory) {
+                    std::pair<long, long> pos = event.defender->get_position();
+                    App::getInstance().edit_map(pos.first, pos.second, '.');
+                }
+                else if (result == FightOutcome::Defeat) {
+                    std::pair<long, long> pos = event.attacker->get_position();
+                    App::getInstance().edit_map(pos.first, pos.second, '.');
+                }
+            }
+        }
+        else {
+            co_await std::suspend_always{};
+        }
+    }
+};
+
+#endif
+
 void simulationLogic(const std::vector<std::shared_ptr<NPC>> characters, const size_t charactersCount) {
     PrintHandler::print("\tНачинаем симуляцию...\n");
 
@@ -155,10 +234,11 @@ void simulationLogic(const std::vector<std::shared_ptr<NPC>> characters, const s
     bool isRunning = false;
     std::condition_variable cv;
     std::mutex mtx;
+    std::mutex char_mutex;
     std::unique_lock lock(mtx);
 
 #ifndef WITH_COROUTINES
-    auto moveHandler = [characters, &isRunning, &cv, &lock]() {
+    auto moveHandler = [&characters, &isRunning, &cv, &lock]() {
         while(!isRunning) {
             cv.wait(lock);
         }
@@ -191,7 +271,7 @@ void simulationLogic(const std::vector<std::shared_ptr<NPC>> characters, const s
         }
     };
 
-    auto fightHandler = [characters, &isRunning, &cv, &lock]() {
+    auto fightHandler = [&characters, &isRunning, &cv, &lock]() {
         while(!isRunning) {
             cv.wait(lock);
         }
@@ -222,18 +302,50 @@ void simulationLogic(const std::vector<std::shared_ptr<NPC>> characters, const s
         }
     };
 
-    std::thread moveThread(moveHandler);
     std::thread fightThread(fightHandler);
+#else
+    auto moveHandler = [&characters, &isRunning, &cv, &lock]() {
+        auto coroutine = perform_fight();
 
-    auto start_time = std::chrono::steady_clock::now();
+        while(!isRunning) {
+            cv.wait(lock);
+        }
+        
+        while (isRunning) {
+            for (const std::shared_ptr<NPC>& npc : characters) {
+                if (!npc->is_dead()) {
+                    std::random_device rnd;
+                    std::mt19937 generator(rnd());
+    
+                    std::uniform_int_distribution<long> shift(-npc->get_move_distance(), npc->get_move_distance());
 
-#elseif
+                    std::pair<long, long> old_pos = npc->get_position();
+                    App::getInstance().edit_map(old_pos.first, old_pos.second, '.');
 
+                    npc->move(shift(generator), shift(generator));
+                    
+                    std::pair<long, long> new_pos = npc->get_position();
+                    App::getInstance().edit_map(new_pos.first, new_pos.second, npc->get_symbol());
+
+                    for (const std::shared_ptr<NPC>& other_npc : characters) {
+                        if (npc != other_npc && !other_npc->is_dead() && npc->is_close(other_npc)) {
+                            FightManager::get().add_event({ npc, other_npc });
+                            coroutine.resume();
+                        }
+                    }
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+    };
 #endif
+    std::thread moveThread(moveHandler);
 
     isRunning = true;
     cv.notify_all();
 
+    auto start_time = std::chrono::steady_clock::now();
     while (isRunning) {
         App::getInstance().print_map();
 
@@ -245,9 +357,11 @@ void simulationLogic(const std::vector<std::shared_ptr<NPC>> characters, const s
             isRunning = false;
         }
     }
-
+    
     moveThread.join();
+#ifndef WITH_COROUTINES
     fightThread.join();
+#endif
 
     std::stringstream ss;
     ss << "\tСимуляция закончена. В живых осталось ";

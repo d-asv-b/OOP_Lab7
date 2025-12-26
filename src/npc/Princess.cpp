@@ -45,10 +45,10 @@ FightOutcome Princess::fight(std::shared_ptr<Princess> other) {
 
 FightOutcome Princess::fight(std::shared_ptr<Dragon> other) {
     int this_defense   = tossD6();
-    int this_strength  = tossD6();
+    this->notify("'защита'", this_defense);
 
-    int defender_defense   = tossD6();
     int defender_strength  = tossD6();
+    this->notify("'сила'", defender_strength);
 
     if (this_defense < defender_strength) {
         this->kill();

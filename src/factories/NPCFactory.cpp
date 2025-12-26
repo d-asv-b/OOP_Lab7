@@ -4,6 +4,10 @@
 #include "../../include/npc/Princess.hpp"
 #include "../../include/npc/WanderingKnight.hpp"
 
+#include "../../include/observers/FightTextObserver.hpp"
+#include "../../include/observers/FightFileObserver.hpp"
+#include "../../include/observers/DiceTextObserver.hpp"
+
 #include <cstdlib>
 #include <iostream>
 #include <istream>
@@ -39,7 +43,9 @@ std::shared_ptr<NPC> NPCFactory::createNPC(std::istream& input) {
     }
 
     if (result) {
-        result->subscribe(TextObserver::get());
+        result->subscribe(FightTextObserver::get());
+        result->subscribe(FightFileObserver::get());
+        result->subscribe(DiceTextObserver::get());
     }
 
     return result;
@@ -68,7 +74,9 @@ std::shared_ptr<NPC> NPCFactory::createNPC(NPC_Type type, long position_X, long 
     }
 
     if (result) {
-        result->subscribe(TextObserver::get());
+        result->subscribe(FightTextObserver::get());
+        result->subscribe(FightFileObserver::get());
+        result->subscribe(DiceTextObserver::get());
     }
     
     return result;

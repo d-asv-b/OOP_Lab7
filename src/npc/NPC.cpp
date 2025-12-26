@@ -8,8 +8,9 @@
 #include <cmath>
 #include <iostream>
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 #include <random>
+#include <string>
 
 NPC::NPC(NPC_Type type, long pos_X, long pos_Y) 
     : type_(type),
@@ -35,27 +36,42 @@ bool NPC::is_close(std::shared_ptr<NPC> other) const {
 }
 
 void NPC::kill() {
-    std::lock_guard<std::mutex> lock(this->mutex_);
+    std::lock_guard lock(this->mutex_);
 
     this->isDead_ = true;
 }
 
-bool NPC::is_dead() const { 
+bool NPC::is_dead() const {
+    std::shared_lock lock(this->mutex_);
     return this->isDead_;
 }
 
 void NPC::notify(const std::shared_ptr<NPC> defender, FightOutcome outcome) {
-    std::lock_guard<std::mutex> lock(this->mutex_);
+    std::lock_guard lock(this->mutex_);
 
-    for (auto obs : this->observers_) {
+    for (auto obs : this->fight_observers_) {
         obs->on_fight(shared_from_this(), defender, outcome);
     }
 }
 
-void NPC::subscribe(const std::shared_ptr<IFightObserver> observer) {
-    std::lock_guard<std::mutex> lock(this->mutex_);
+void NPC::notify(const std::string& dice_value_name, char dice_value) {
+    std::lock_guard lock(this->mutex_);
 
-    this->observers_.push_back(observer);
+    for (auto obs : this->dice_observers_) {
+        obs->on_throw_dice(shared_from_this(), dice_value_name, dice_value);
+    }
+}
+
+void NPC::subscribe(const std::shared_ptr<IFightObserver> observer) {
+    std::lock_guard lock(this->mutex_);
+
+    this->fight_observers_.push_back(observer);
+}
+
+void NPC::subscribe(const std::shared_ptr<IDiceObserver> observer) {
+    std::lock_guard lock(this->mutex_);
+
+    this->dice_observers_.push_back(observer);
 }
 
 void NPC::save(std::ostream& output) const {
@@ -63,26 +79,29 @@ void NPC::save(std::ostream& output) const {
 }
 
 std::pair<long, long> NPC::get_position() const {
+    std::shared_lock lock(this->mutex_);
     return { this->x_, this->y_ };
 }
 
 long NPC::get_move_distance() const {
+    std::shared_lock lock(this->mutex_);
     return this->move_distance_;
 }
 
 long NPC::get_fight_distance() const {
+    std::shared_lock lock(this->mutex_);
     return this->fight_distance_;
 }
 
 void NPC::move(long shift_X, long shift_Y) {
     std::lock_guard lock(this->mutex_);
 
-
     this->x_ = std::clamp(this->x_ + shift_X, 0l, App::getInstance().get_map_width() - 1);
     this->y_ = std::clamp(this->y_ + shift_Y, 0l, App::getInstance().get_map_height() - 1);
 }
 
 char NPC::get_symbol() const {
+    std::shared_lock lock(this->mutex_);
     return this->symbol_;
 }
  

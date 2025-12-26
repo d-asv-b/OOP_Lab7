@@ -8,10 +8,9 @@
 #include <cmath>
 #include <cstddef>
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 #include <sstream>
 #include <string>
-
 
 std::unique_ptr<App> App::instance_ = nullptr;
 std::mutex App::instance_mtx_;
@@ -25,7 +24,7 @@ App::App(size_t characters, long map_width, long map_height)
 }
 
 App& App::getInstance(size_t characters, long map_width, long map_height) {
-    std::lock_guard<std::mutex> lock(instance_mtx_);
+    std::lock_guard lock(instance_mtx_);
 
     if (instance_ == nullptr) {
         instance_ = std::unique_ptr<App>(new App(characters, map_width, map_height));
@@ -64,13 +63,14 @@ void App::edit_map(long posX, long posY, char newVal) {
 void App::print_map() const {
     std::stringstream ss;
 
+
     for (long i = 0; i < mapWidth_ + 2; ++i) {
         ss << "-";
     }
 
     ss << "\n";
     {
-        std::lock_guard lock(this->map_mtx_);
+        std::shared_lock lock(this->map_mtx_);
         for (long i = 0; i < mapHeight_; ++i) {
             ss << "|";
             
@@ -86,20 +86,22 @@ void App::print_map() const {
         ss << "-";
     }
 
-    ss << "\n\n\n";
+    ss << "\n\n";
 
     PrintHandler::print(ss);
 }
 
 long App::get_map_width() const {
+    std::shared_lock lock(this->map_mtx_);
     return this->mapWidth_;
 }
 
 long App::get_map_height() const {
+    std::shared_lock lock(this->map_mtx_);
     return this->mapHeight_;
 }
 
 char App::get_map_state(long posX, long posY) const {
-    std::lock_guard lock(this->map_mtx_);
+    std::shared_lock lock(this->map_mtx_);
     return (this->map_)[posY][posX];
 }

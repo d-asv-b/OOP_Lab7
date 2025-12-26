@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 #include <vector>
 
 class IApp {
@@ -16,7 +16,7 @@ private:
     long mapWidth_ = 100;
     long mapHeight_ = 100;
 
-    mutable std::mutex map_mtx_;
+    mutable std::shared_mutex map_mtx_;
     std::vector<std::vector<char>> map_;
 
     static std::unique_ptr<App> instance_;
