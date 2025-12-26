@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
-#include "NPCFactory.hpp"
-#include "Dragon.hpp"
-#include "Princess.hpp"
-#include "WanderingKnight.hpp"
+#include "../include/factories/NPCFactory.hpp"
+#include "../include/npc/Dragon.hpp"
+#include "../include/npc/Princess.hpp"
+#include "../include/npc/WanderingKnight.hpp"
 
 class NPCFactoryTest : public ::testing::Test {
 protected:

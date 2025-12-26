@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <memory>
-#include "AppState.hpp"
-#include "Dragon.hpp"
-#include "Princess.hpp"
-#include "WanderingKnight.hpp"
+#include "../include/application/AppState.hpp"
+#include "../include/npc/Dragon.hpp"
+#include "../include/npc/Princess.hpp"
+#include "../include/npc/WanderingKnight.hpp"
 
 class AppStateTest : public ::testing::Test {
 protected:

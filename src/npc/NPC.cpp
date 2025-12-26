@@ -1,4 +1,10 @@
 #include "../../include/npc/NPC.hpp"
+
+#include "../../include/application/AppLogic.hpp"
+#include "../../include/application/App.hpp"
+
+
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -38,56 +44,6 @@ bool NPC::is_dead() const {
     return this->isDead_;
 }
 
-FightOutcome NPC::fight(std::shared_ptr<NPC> defender) {
-    std::scoped_lock lock(
-        this->mutex_,
-        defender->mutex_
-    );
-
-    if (!this->is_close(defender)) {
-        return FightOutcome::Draw;
-    }
-
-    if (defender->is_dead()) {
-        return FightOutcome::Victory;
-    }
-
-    if (this->is_dead()) {
-        return FightOutcome::Defeat;
-    }
-
-    FightOutcome result = FightOutcome::Draw;
-
-    std::random_device rnd;
-    std::mt19937 generator(rnd());
-
-    std::uniform_int_distribution<int> dice_6(1, 6);
-
-    int this_defense   = dice_6(generator);
-    int this_strength  = dice_6(generator);
-
-    int defender_defense   = dice_6(generator);
-    int defender_strength  = dice_6(generator);
-
-    if (this_strength > defender_defense) {
-        defender->kill();
-        result = FightOutcome::Victory;
-    }
-
-    if (this_defense < defender_strength) {
-        this->kill();
-
-        if (result == FightOutcome::Victory) {
-            result = FightOutcome::MutualDefeat;
-        }
-        else {
-            result = FightOutcome::Defeat;
-        }
-    }
-
-    return result;
-}
-
 void NPC::notify(const std::shared_ptr<NPC> defender, FightOutcome outcome) {
     std::lock_guard<std::mutex> lock(this->mutex_);
 
@@ -110,6 +66,26 @@ std::pair<long, long> NPC::get_position() const {
     return { this->x_, this->y_ };
 }
 
+long NPC::get_move_distance() const {
+    return this->move_distance_;
+}
+
+long NPC::get_fight_distance() const {
+    return this->fight_distance_;
+}
+
+void NPC::move(long shift_X, long shift_Y) {
+    std::lock_guard lock(this->mutex_);
+
+
+    this->x_ = std::clamp(this->x_ + shift_X, 0l, App::getInstance().get_map_width() - 1);
+    this->y_ = std::clamp(this->y_ + shift_Y, 0l, App::getInstance().get_map_height() - 1);
+}
+
+char NPC::get_symbol() const {
+    return this->symbol_;
+}
+ 
 std::ostream& operator<<(std::ostream& output, NPC& npc) {
     output << npc.info();
 

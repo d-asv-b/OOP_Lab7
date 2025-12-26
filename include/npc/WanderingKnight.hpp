@@ -24,4 +24,10 @@ public:
 
     virtual void print() const override;
     virtual std::string info() const override;
+
+    virtual FightOutcome accept(std::shared_ptr<NPC> visitor) override;
+
+    virtual FightOutcome fight(std::shared_ptr<WanderingKnight> defender) override;
+    virtual FightOutcome fight(std::shared_ptr<Princess> defender) override;
+    virtual FightOutcome fight(std::shared_ptr<Dragon> defender) override;
 };

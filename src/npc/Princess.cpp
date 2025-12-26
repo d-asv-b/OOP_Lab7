@@ -1,4 +1,6 @@
 #include "../../include/npc/Princess.hpp"
+#include "../../include/application/PrintHandler.hpp"
+#include "../../include/application/AppLogic.hpp"
 
 #include <iostream>
 #include <memory>
@@ -6,10 +8,14 @@
 
 Princess::Princess(long pos_X, long pos_Y)
     : NPC(NPC_Type::Princess, pos_X, pos_Y) {
+        symbol_ = 'P';
+        move_distance_ = 1;
+        fight_distance_ = 1;
 }
 
 Princess::Princess(std::istream& input)
     : NPC(NPC_Type::Princess, input) {
+        symbol_ = 'P';
 }
 
 std::string Princess::info() const {
@@ -20,5 +26,34 @@ std::string Princess::info() const {
 }
 
 void Princess::print() const {
-    std::cout << this->info() << std::endl;
+    std::stringstream ss;
+    ss << this->info() << std::endl;
+    PrintHandler::print(ss);
+}
+
+FightOutcome Princess::accept(std::shared_ptr<NPC> attacker) {
+    return attacker->fight(std::dynamic_pointer_cast<Princess>(shared_from_this()));
+} 
+
+FightOutcome Princess::fight(std::shared_ptr<WanderingKnight> other) {
+    return FightOutcome::Draw;
+}
+
+FightOutcome Princess::fight(std::shared_ptr<Princess> other) {
+    return FightOutcome::Draw;
+}
+
+FightOutcome Princess::fight(std::shared_ptr<Dragon> other) {
+    int this_defense   = tossD6();
+    int this_strength  = tossD6();
+
+    int defender_defense   = tossD6();
+    int defender_strength  = tossD6();
+
+    if (this_defense < defender_strength) {
+        this->kill();
+        return FightOutcome::Defeat;
+    }
+
+    return FightOutcome::Draw;
 }

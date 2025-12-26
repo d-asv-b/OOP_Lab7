@@ -1,4 +1,5 @@
 #include "../../include/application/CommandProcessor.hpp"
+#include "../../include/application/PrintHandler.hpp"
 
 CommandProcessor::CommandProcessor(size_t characters, long map_width, long map_height)
     : characters_(characters),
@@ -51,6 +52,6 @@ void CommandProcessor::executeSimulation(AppState& state) {
     if (state.hasCharacters()) {
         simulationLogic(state.getCharacters(), characters_);
     } else {
-        std::cout << "\tОшибка: нет загруженных персонажей для симуляции!\n";
+        PrintHandler::print("\tОшибка: нет загруженных персонажей для симуляции!\n");
     }
 }

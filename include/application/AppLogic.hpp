@@ -32,3 +32,5 @@ std::vector<std::shared_ptr<NPC>> loadFromFileLogic(const size_t characters);
 void saveToFileLogic(const std::vector<std::shared_ptr<NPC>> characters, const size_t charactersCount);
 
 void simulationLogic(const std::vector<std::shared_ptr<NPC>> characters, const size_t charactersCount);
+
+char tossD6();

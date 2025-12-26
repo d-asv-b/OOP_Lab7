@@ -20,11 +20,13 @@ class IFightable {
     public:
         virtual ~IFightable() = default;
 
-        virtual FightOutcome fight(std::shared_ptr<class WanderingKnight>) = 0;
-        virtual FightOutcome fight(std::shared_ptr<class Princess>) = 0;
-        virtual FightOutcome fight(std::shared_ptr<class Dragon>) = 0;
+        virtual FightOutcome fight(std::shared_ptr<class WanderingKnight> defender) = 0;
+        virtual FightOutcome fight(std::shared_ptr<class Princess> defender) = 0;
+        virtual FightOutcome fight(std::shared_ptr<class Dragon> defender) = 0;
 
-        virtual FightOutcome accept(std::shared_ptr<NPC>) = 0;
+        virtual FightOutcome accept(std::shared_ptr<NPC> attacker) = 0;
+
+        virtual long get_fight_distance() const = 0;
 };
 
 class IMortal {
@@ -39,7 +41,8 @@ class IMovable {
     public:
         ~IMovable() = default;
 
-        std::pair<long, long> get_position() const;
+        virtual std::pair<long, long> get_position() const = 0;
 
-        virtual void move(long shift_X, long shift_Y, long max_X, long max_Y);
+        virtual void move(long shift_X, long shift_Y) = 0;
+        virtual long get_move_distance() const = 0;
 };
